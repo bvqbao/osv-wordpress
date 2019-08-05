@@ -1,0 +1,108 @@
+diff --git a/main/SAPI.h b/main/SAPI.h
+index 0f686502..238ff51e 100644
+--- a/main/SAPI.h
++++ b/main/SAPI.h
+@@ -321,6 +321,44 @@ END_EXTERN_C()
+ 	NULL, /* additional_functions    */ \
+ 	NULL  /* input_filter_init       */
+ 
++#include <setjmp.h>
++#include <unistd.h>
++#include <sched.h>
++
++#define TFORK_SYSCALL_NUM           500
++#define EXECVE_SYSCALL_NUM          501
++#define WAITPID_SYSCALL_NUM         502
++
++/* This should be declared somewhere else, probably in the C file conatining
++ * main(), and within main should be initialized as follows:
++ * main_ret_addr = __builtin_return_address(0)
++ */
++extern void *main_ret_addr;
++
++static inline int tfork(void) {
++    jmp_buf envx;
++
++    /* setjmp returns 0 when called first (parent). When the child jumps back
++     * here, it retruns 1 */
++    int setjmp_ret = setjmp(envx);
++    if(!setjmp_ret)
++        return syscall(TFORK_SYSCALL_NUM, &envx, main_ret_addr);
++
++    /* let the parent run first in case the child call tfork again (I'm not
++     * 100% sure we are thread safe */
++    sched_yield();
++    return 0;
++}
++
++static inline int tfork_execve(const char *pathname, char *const argv[],
++        char *const envp[]) {
++    return syscall(EXECVE_SYSCALL_NUM, pathname, argv, envp);
++}
++
++static inline int tfork_waitpid(long tid, int *status, int option) {
++    return syscall(WAITPID_SYSCALL_NUM, tid, status, option);
++}
++
+ #endif /* SAPI_H */
+ 
+ /*
+diff --git a/main/main.c b/main/main.c
+index 7deb3010..077b709d 100644
+--- a/main/main.c
++++ b/main/main.c
+@@ -2510,7 +2510,7 @@ PHPAPI int php_execute_script(zend_file_handle *primary_file)
+ 
+ 		PG(during_request_startup) = 0;
+ 
+-		if (primary_file->filename && !(SG(options) & SAPI_OPTION_NO_CHDIR)) {
++		if ( 0 /*primary_file->filename && !(SG(options) & SAPI_OPTION_NO_CHDIR)*/ ) {
+ #if HAVE_BROKEN_GETCWD
+ 			/* this looks nasty to me */
+ 			old_cwd_fd = open(".", 0);
+@@ -2620,7 +2620,7 @@ PHPAPI int php_execute_simple_script(zend_file_handle *primary_file, zval *ret)
+ 
+ 		PG(during_request_startup) = 0;
+ 
+-		if (primary_file->filename && !(SG(options) & SAPI_OPTION_NO_CHDIR)) {
++		if ( 0 /*primary_file->filename && !(SG(options) & SAPI_OPTION_NO_CHDIR)*/) {
+ 			php_ignore_value(VCWD_GETCWD(old_cwd, OLD_CWD_SIZE-1));
+ 			VCWD_CHDIR_FILE(primary_file->filename);
+ 		}
+diff --git a/sapi/cgi/cgi_main.c b/sapi/cgi/cgi_main.c
+index cecf32ac..81f6cf1e 100644
+--- a/sapi/cgi/cgi_main.c
++++ b/sapi/cgi/cgi_main.c
+@@ -1788,10 +1788,14 @@ static zend_module_entry cgi_module_entry = {
+ 	STANDARD_MODULE_PROPERTIES
+ };
+ 
++void *main_ret_addr;
++
+ /* {{{ main
+  */
+ int main(int argc, char *argv[])
+ {
++	main_ret_addr = __builtin_return_address(0);
++
+ 	int free_query_string = 0;
+ 	int exit_status = SUCCESS;
+ 	int cgi = 0, c, i;
+@@ -1808,7 +1812,7 @@ int main(int argc, char *argv[])
+ 	size_t ini_entries_len = 0;
+ 	/* end of temporary locals */
+ 
+-	int max_requests = 500;
++	int max_requests = 100000000;
+ 	int requests = 0;
+ 	int fastcgi;
+ 	char *bindpath = NULL;
+@@ -2125,7 +2129,7 @@ consult the installation file that came with this distribution, or visit \n\
+ #ifdef DEBUG_FASTCGI
+ 					fprintf(stderr, "Forking, %d running\n", running);
+ #endif
+-					pid = fork();
++					pid = tfork();
+ 					switch (pid) {
+ 					case 0:
+ 						/* One of the children.

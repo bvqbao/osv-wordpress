@@ -1,0 +1,45 @@
+diff --git a/src/fdevent.c b/src/fdevent.c
+index 4da5672..63aa7fc 100644
+--- a/src/fdevent.c
++++ b/src/fdevent.c
+@@ -200,6 +200,11 @@ void fdevent_event_set(fdevents *ev, int *fde_ndx, int fd, int events) {
+ 	if (ev->fdarray[fd]->events == events) return;/*(no change; nothing to do)*/
+ 
+ 	if (ev->event_set) *fde_ndx = ev->event_set(ev, *fde_ndx, fd, events);
++
++	char buf[1024] = {0};
++        snprintf(buf, sizeof(buf), "fdevent_event_set(): fde_ndx=%d", *fde_ndx);
++        log_error_write(ev->srv, __FILE__, __LINE__, "S", buf);
++
+ 	ev->fdarray[fd]->events = events;
+ }
+ 
+diff --git a/src/fdevent_linux_sysepoll.c b/src/fdevent_linux_sysepoll.c
+index 391833d..5a45231 100644
+--- a/src/fdevent_linux_sysepoll.c
++++ b/src/fdevent_linux_sysepoll.c
+@@ -72,6 +72,12 @@ static int fdevent_linux_sysepoll_event_set(fdevents *ev, int fde_ndx, int fd, i
+ 	ep.data.ptr = NULL;
+ 	ep.data.fd = fd;
+ 
++	char buf[1024] = {0};
++	snprintf(buf, sizeof(buf),
++		"fdevent_linux_sysepoll_event_set(): epoll_fd=%d, fd=%d, fde_ndx=%d",
++		ev->epoll_fd, fd, fde_ndx);
++	log_error_write(ev->srv, __FILE__, __LINE__, "S", buf);
++
+ 	if (0 != epoll_ctl(ev->epoll_fd, add ? EPOLL_CTL_ADD : EPOLL_CTL_MOD, fd, &ep)) {
+ 		log_error_write(ev->srv, __FILE__, __LINE__, "SSS",
+ 			"epoll_ctl failed: ", strerror(errno), ", dying");
+@@ -142,6 +148,11 @@ int fdevent_linux_sysepoll_init(fdevents *ev) {
+ 		return -1;
+ 	}
+ 
++	char buf[1024] = {0};
++	snprintf(buf, sizeof(buf),
++		"fdevent_linux_sysepoll_init(): epoll_fd=%d", ev->epoll_fd);
++	log_error_write(ev->srv, __FILE__, __LINE__, "S", buf);
++
+ 	fd_close_on_exec(ev->epoll_fd);
+ 
+ 	ev->epoll_events = malloc(ev->maxfds * sizeof(*ev->epoll_events));

@@ -1,0 +1,51 @@
+#!/bin/sh
+
+VERSION=5.6.40
+BASEDIR=$PWD
+BUILDDIR=$BASEDIR/build
+ROOTDIR=$BASEDIR/install
+SRCDIR=$BASEDIR/mysql-$VERSION
+
+if [ ! -f mysql-$VERSION.tar.gz ]; then
+    wget http://dev.mysql.com/get/Downloads/MySQL-5.6/mysql-$VERSION.tar.gz
+fi
+tar zxf mysql-$VERSION.tar.gz
+
+# This will fix a crash problem when using libmysqlclient in OSV
+#sed -i "s/update_statistics(thd_increment_bytes_received(recvcnt))/\/\/update_statistics(thd_increment_bytes_received(recvcnt))/" ./mysql-5.6.40/sql/net_serv.cc
+
+mkdir -p $BUILDDIR
+mkdir -p $ROOTDIR/etc
+
+cd $SRCDIR
+patch -p1 < ../osv.patch
+
+cd $BUILDDIR
+CFLAGS="-fPIC -Wimplicit-fallthrough=0 -Wno-int-in-bool-context -fno-stack-protector" CXXFLAGS="-fPIC -Wimplicit-fallthrough=0 -Wno-int-in-bool-context -faligned-new -fno-stack-protector" cmake -DWITH_NUMA=OFF -DCMAKE_INSTALL_PREFIX:PATH=/usr ../mysql-$VERSION
+make -j4
+make install DESTDIR=$ROOTDIR
+
+cd $ROOTDIR
+egrep mysql /etc/services > etc/services
+cp $BASEDIR/my.cnf etc/
+cd usr
+
+./scripts/mysql_install_db --force --basedir=./ --ldata=../data --lc_messages_dir=./share --defaults-file=../etc/my.cnf
+cat <<EOF | eval './bin/mysqld --bootstrap --skip-grant-tables --basedir=./ --datadir=../data --max_allowed_packet=8M --net_buffer_length=16K --lc_messages_dir=./share'
+create database wordpress;
+use mysql;
+set default_storage_engine=InnoDB;
+insert into user(Host, User, Password, Select_priv, Insert_priv, Update_priv, Delete_priv, Create_priv, Drop_priv, Reload_priv, Shutdown_priv, Process_priv, File_priv, Grant_priv, References_priv, Index_priv, Alter_priv, Show_db_priv, Super_priv, Create_tmp_table_priv, Lock_tables_priv, Execute_priv, Repl_slave_priv, Repl_client_priv, Create_view_priv, Show_view_priv, Create_routine_priv, Alter_routine_priv, Create_user_priv, Event_priv, Trigger_priv, Create_tablespace_priv) values('%', 'admin', password('osv'), 'Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y');
+EOF
+
+cd $BUILDDIR/sql
+$(cat CMakeFiles/mysqld.dir/link.txt) -shared
+cd $BASEDIR
+
+echo "
+/etc/**: ${ROOTDIR}/etc/**
+/usr/share/**: ${ROOTDIR}/usr/share/**
+/usr/lib/**: ${ROOTDIR}/usr/lib/**
+/data/**: ${ROOTDIR}/data/**
+/usr/bin/mysqld: ${BUILDDIR}/sql/mysqld
+" > usr.manifest

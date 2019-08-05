@@ -1,0 +1,57 @@
+diff --git a/src/Makefile.am b/src/Makefile.am
+index c2f24de..e170f5d 100644
+--- a/src/Makefile.am
++++ b/src/Makefile.am
+@@ -123,7 +123,7 @@ mod_evasive_la_LIBADD = $(common_libadd)
+ 
+ lib_LTLIBRARIES += mod_webdav.la
+ mod_webdav_la_SOURCES = mod_webdav.c
+-mod_webdav_la_CFLAGS = $(AM_CFLAGS) $(XML_CFLAGS) $(SQLITE_CFLAGS) 
++mod_webdav_la_CFLAGS = $(AM_CFLAGS) $(XML_CFLAGS) $(SQLITE_CFLAGS)
+ mod_webdav_la_LDFLAGS = $(common_module_ldflags)
+ mod_webdav_la_LIBADD = $(common_libadd) $(XML_LIBS) $(SQLITE_LIBS) $(UUID_LIBS)
+ 
+@@ -374,7 +374,6 @@ lighttpd_SOURCES = \
+   mod_secdownload.c \
+   mod_setenv.c \
+   mod_simple_vhost.c \
+-  mod_ssi_exprparser.c mod_ssi_expr.c mod_ssi.c \
+   mod_staticfile.c \
+   mod_status.c \
+   mod_uploadprogress.c \
+diff --git a/src/plugin-static.h b/src/plugin-static.h
+new file mode 100644
+index 0000000..0e9197a
+--- /dev/null
++++ b/src/plugin-static.h
+@@ -0,0 +1,29 @@
++PLUGIN_INIT(mod_access)
++PLUGIN_INIT(mod_accesslog)
++PLUGIN_INIT(mod_alias)
++PLUGIN_INIT(mod_auth)
++PLUGIN_INIT(mod_authn_file)
++PLUGIN_INIT(mod_cgi)
++PLUGIN_INIT(mod_compress)
++PLUGIN_INIT(mod_deflate)
++PLUGIN_INIT(mod_dirlisting)
++PLUGIN_INIT(mod_evasive)
++PLUGIN_INIT(mod_expire)
++PLUGIN_INIT(mod_extforward)
++PLUGIN_INIT(mod_fastcgi)
++PLUGIN_INIT(mod_flv_streaming)
++PLUGIN_INIT(mod_indexfile)
++PLUGIN_INIT(mod_proxy)
++PLUGIN_INIT(mod_redirect)
++PLUGIN_INIT(mod_rewrite)
++PLUGIN_INIT(mod_rrdtool)
++PLUGIN_INIT(mod_scgi)
++PLUGIN_INIT(mod_secdownload)
++PLUGIN_INIT(mod_setenv)
++PLUGIN_INIT(mod_simple_vhost)
++PLUGIN_INIT(mod_staticfile)
++PLUGIN_INIT(mod_status)
++PLUGIN_INIT(mod_uploadprogress)
++PLUGIN_INIT(mod_userdir)
++PLUGIN_INIT(mod_usertrack)
++PLUGIN_INIT(mod_webdav)
+\ No newline at end of file
