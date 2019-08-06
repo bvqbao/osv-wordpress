@@ -41,7 +41,6 @@ $(SRC)/Makefile:
 	sed -i "s/fvisibility=hidden/fvisibility=default/" ./php-7.1.28/Makefile
 
 $(SRC)/sapi/cgi/php-cgi: $(SRC)/Makefile
-	cd php-7.1.28 && make -n > temp &1>2
 	cd php-7.1.28 && make -j `nproc`
 
 .DELETE_ON_ERROR:
