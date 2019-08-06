@@ -37,9 +37,10 @@ upstream/lighttpd/Makefile.in: upstream.tar
 	touch upstream/lighttpd/Makefile.in
 
 $(SRC)/libtool-orig: $(SRC)/Makefile.in
-	cd $(SRC) && patch -p1 < ../../debug.patch && patch -p1 < ../../static-build.patch && \
+	cd $(SRC) && patch -p1 < ../../static-build.patch && \
 		spatch ../../tforkify.cocci src --ignore "src/lemon.c" > patch && patch -d src -p1 < patch && cp ../../tfork.h src && \
 		autoreconf && LIGHTTPD_STATIC=yes ./configure -C --enable-static=yes --without-bzip2 --prefix=/lighttpd
+	sed -i "s/tfork()/fork()/" $(SRC)/src/mod_fastcgi.c
 	mv $(SRC)/libtool $(SRC)/libtool-orig
 
 $(SRC)/libtool: $(SRC)/libtool-orig
