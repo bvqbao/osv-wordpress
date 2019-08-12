@@ -54,5 +54,17 @@ int main( void ) {
 		return 0;
 	}
 
+	char *osvapi_argv[2] = {"Command-line", NULL};
+
+	printf("*** fork(): osv api ***\n");
+	long pid4 = tfork();
+	if ( pid4 == 0 ) {
+		tfork_execve("/libhttpserver-api.so", osvapi_argv, NULL);
+
+		printf( "[%d] exiting to %p\n", getpid(), __builtin_return_address(0));
+
+		return 0;
+	}
+
 	return 0;
 }
