@@ -1,5 +1,5 @@
 ROOT=${CURDIR}
-PCRE_SOURCE=ftp://ftp.csx.cam.ac.uk/pub/software/programming/pcre/pcre-8.42.tar.gz
+PCRE_SOURCE=https://ftp.pcre.org/pub/pcre/pcre-8.42.tar.gz
 ZLIB_SOURCE=https://zlib.net/fossils/zlib-1.2.3.tar.gz
 XML2_SOURCE=ftp://xmlsoft.org/libxml2/libxml2-2.9.9.tar.gz
 PHP_SOURCE=http://fr.php.net/get/php-7.1.28.tar.gz/from/this/mirror
